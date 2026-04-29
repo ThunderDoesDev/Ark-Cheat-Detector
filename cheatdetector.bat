@@ -22,7 +22,7 @@ echo ==========================================
 echo         Cheat Detection Script
 echo ==========================================
 echo Developed by: ThunderDoesDev
-echo Version: 3.0 - Full System Search
+echo Version: 2.0
 echo ==========================================
 
 :: Set the location of the log file
