@@ -131,6 +131,34 @@ for %%t in %searchTerms% do (
         set cheatFound=1
     )
 )
+goto checkDeletedFiles
+
+:: Function to check for deleted files in Recycle Bin
+:checkDeletedFiles
+echo [INFO] Checking deleted files in Recycle Bin...
+echo [%date% %time%] Checking deleted files in Recycle Bin... >> "%logFile%"
+
+:: PowerShell to get detailed Recycle Bin info including deletion dates
+powershell -Command "Get-ChildItem -Path 'C:\$Recycle.Bin' -Recurse -ErrorAction SilentlyContinue | Select-Object FullName, LastWriteTime, Length, Extension | Format-Table -AutoSize" >> "%logFile%" 2>&1
+
+:: Check for specific cheat terms in Recycle Bin
+for %%t in %searchTerms% do (
+    powershell -Command "Get-ChildItem -Path 'C:\$Recycle.Bin' -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -like '*%%t*' -or $_.FullName -like '*%%t*' } | Select-Object FullName, LastWriteTime, Length | Format-Table -AutoSize" >> "%logFile%" 2>&1
+    if !errorlevel! equ 0 (
+        echo [ALERT] Deleted cheat file detected in Recycle Bin: %%t
+        echo Deleted cheat file detected in Recycle Bin: %%t >> "%logFile%"
+        set cheatFound=1
+    )
+)
+
+:: Check for shadow copies (if available)
+echo [INFO] Checking for shadow copies (Volume Shadow Copies)...
+echo [%date% %time%] Checking for shadow copies... >> "%logFile%"
+powershell -Command "Get-WmiObject -Class Win32_ShadowCopy | Select-Object ID, DeviceObject, InstalledOn, VolumeName | Format-Table -AutoSize" >> "%logFile%" 2>&1
+
+:: If shadow copies exist, search them for cheat terms
+powershell -Command "$shadows = Get-WmiObject -Class Win32_ShadowCopy; if ($shadows) { foreach ($shadow in $shadows) { $shadowPath = $shadow.DeviceObject + '\'; if (Test-Path $shadowPath) { Write-Host \"Searching shadow copy: $($shadow.ID)\"; Get-ChildItem -Path $shadowPath -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'headshot|primal|unleashed|proofcore|ring-1|arkinjector|extreme-injector|HSLoaderUpdater|UWPHelper|addicted|HSLoader|HSUWPHelper|RDPCheck|rdp|wallhax|Client_32' } | Select-Object FullName, LastWriteTime } } }" >> "%logFile%" 2>&1
+
 goto additionalPowershellChecks
 
 :: Function for additional checks using PowerShell
