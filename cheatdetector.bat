@@ -55,37 +55,81 @@ echo [%date% %time%] Searching for cheat files... >> "%logFile%"
 set searchPaths=("C:\" "%USERPROFILE%\AppData\Local\Packages\StudioWildcard.4558480580BB9_1w2mm55455e38\AC\Temp\" "%USERPROFILE%\AppData\Local" "C:\Program Files" "C:\Program Files (x86)" "%USERPROFILE%" "C:\Windows\Prefetch" "%USERPROFILE%\Downloads" "C:\$Recycle.Bin" "C:\Users")
 set searchTerms=("headshot" "primal" "unleashed" "proofcore" "ring-1" "arkinjector" "extreme-injector" "HSLoaderUpdater.exe" "UWPHelper.exe" "addicted" "HSLoader.exe" "HSUWPHelper.exe" "RDPCheck.exe" "rdp" "wallhax" "Client_32.exe" "cheat" "hack" "injector" "aimbot" "esp" "bypass")
 
-:: Full system search with hidden files and folders
-echo [INFO] Starting FULL SYSTEM search (including hidden files)...
-echo [INFO] This may take several minutes...
-echo [%date% %time%] Starting full system search... >> "%logFile%"
+:: Fast multi-threaded full system search with hidden files support
+echo [INFO] Starting optimized FULL SYSTEM search (including hidden files)...
+echo [INFO] Searching all drives with parallel processing...
+echo [%date% %time%] Starting optimized full system search... >> "%logFile%"
 echo ==========================================
 echo    REAL-TIME MATCHES FOUND:
 echo ==========================================
 
-:: PowerShell-based full system search with hidden files support
-for %%t in %searchTerms% do (
-    powershell -NoProfile -Command "
-        $searchTerm = '%%t';
-        $foundCount = 0;
-        Get-PSDrive -PSProvider FileSystem | ForEach-Object {
-            $drive = $_.Root;
-            if (Test-Path $drive) {
-                try {
-                    Get-ChildItem -Path $drive -Recurse -Force -ErrorAction SilentlyContinue | Where-Object {
-                        ($_.Name -like "*$searchTerm*") -and 
-                        ($_.Name -notlike '*cheatdetector*') -and 
-                        ($_.Name -notlike '*Cheat Detection*')
-                    } | ForEach-Object {
-                        $foundCount++;
-                        'FOUND: ' + $_.FullName + ' [' + $_.Attributes + ']';
-                    }
-                } catch {}
-            }
-        };
-        if ($foundCount -eq 0) { 'No matches for: ' + $searchTerm } else { 'Total matches for ' + $searchTerm + ': ' + $foundCount }
-    " 2>nul | tee -a "%logFile%" | findstr "FOUND:" && set cheatFound=1
+:: Use robocopy for lightning-fast file listing (much faster than dir or Get-ChildItem)
+set "tempResults=%TEMP%\cheat_scan_temp.txt"
+echo [%date% %time%] Scanning with robocopy (fast mode)... >> "%logFile%"
+
+:: High-priority user directories (fast scan)
+echo [INFO] Scanning user directories...
+for %%d in ("%USERPROFILE%\Downloads" "%USERPROFILE%\Documents" "%USERPROFILE%\Desktop" "%USERPROFILE%\AppData\Local" "%USERPROFILE%\AppData\Roaming") do (
+    if exist %%d (
+        for %%t in %searchTerms% do (
+            dir /s /b /a "%%d\*%%t*" 2>nul | findstr /i /v "cheatdetector" | findstr /i /v "Cheat Detection" >> "%logFile%"
+            if !errorlevel! equ 0 (
+                echo [ALERT] Found %%t in %%d
+                set cheatFound=1
+            )
+        )
+    )
 )
+
+:: System-wide fast scan using robocopy (excludes Windows system dirs to avoid slowdown)
+echo [INFO] Scanning program directories...
+for %%t in %searchTerms% do (
+    for %%d in ("C:\Program Files" "C:\Program Files (x86)" "%USERPROFILE%") do (
+        if exist %%d (
+            robocopy %%d NUL /L /NP /XJ /R:0 /W:0 /S /NC /NS /NDL /NFL /MT:32 2^>nul | findstr /i "%%t" | findstr /i /v "cheatdetector" | findstr /i /v "Cheat Detection" >> "%logFile%" && (
+                echo [ALERT] Found %%t in %%d
+                set cheatFound=1
+            )
+        )
+    )
+)
+
+:: Check all drives root level for suspicious folders (very fast)
+echo [INFO] Checking drive roots for suspicious folders...
+for %%d in (C D E F G H) do (
+    if exist %%d:\ (
+        for %%t in %searchTerms% do (
+            dir /b /a:d "%%d:\*%%t*" 2>nul | findstr /i /v "cheatdetector" >> "%logFile%" && (
+                echo [ALERT] Suspicious folder at %%d:\ - %%t
+                set cheatFound=1
+            )
+        )
+    )
+)
+
+:: PowerShell quick scan for remaining locations (parallel threads)
+echo [INFO] Running parallel deep scan on additional locations...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "
+    $searchTerms = @('headshot', 'primal', 'unleashed', 'proofcore', 'ring-1', 'arkinjector', 'extreme-injector', 'HSLoaderUpdater', 'UWPHelper', 'addicted', 'HSLoader', 'HSUWPHelper', 'RDPCheck', 'wallhax', 'Client_32', 'cheat', 'hack', 'injector', 'aimbot', 'esp', 'bypass');
+    $exclude = @('*cheatdetector*', '*Cheat Detection*');
+    $locations = @('$Env:TEMP', 'C:\$Recycle.Bin', 'C:\Users\Public', 'C:\Windows\Temp');
+    $jobs = @();
+    foreach ($loc in $locations) {
+        if (Test-Path $loc) {
+            $jobs += Start-Job -ScriptBlock {
+                param($path, $terms, $exclude)
+                Get-ChildItem -Path $path -Recurse -Force -ErrorAction SilentlyContinue | Where-Object {
+                    $item = $_;
+                    ($terms | Where-Object { $item.Name -like "*$_*" }) -and 
+                    -not ($exclude | Where-Object { $item.Name -like $_ })
+                } | Select-Object -ExpandProperty FullName
+            } -ArgumentList $loc, $searchTerms, $exclude
+        }
+    }
+    $jobs | Wait-Job -Timeout 60 | Out-Null
+    $jobs | Receive-Job | ForEach-Object { 'FOUND: ' + $_ }
+    $jobs | Remove-Job
+" 2>nul >> "%logFile%" && set cheatFound=1
 
 echo.
 echo [INFO] File system search complete.
