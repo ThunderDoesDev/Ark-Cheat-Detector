@@ -9,12 +9,20 @@ if '%errorlevel%' NEQ '0' (
     exit /b
 )
 
+:: Initialize timer
+set startTime=%time%
+set /a startSec=(1%startTime:~0,2%-100)*3600 + (1%startTime:~3,2%-100)*60 + (1%startTime:~6,2%-100)
+
+:: Start background timer process
+start /b cmd /c "title TimerProcess & :loop & for /f "tokens=1-3 delims=:" %%a in ("%time%") do set /a curr=%%a*3600+%%b*60+%%c & set /a elapsed=!curr!-%startSec% & set /a hrs=!elapsed!/3600 & set /a mins=(!elapsed!%%3600)/60 & set /a secs=!elapsed!%%60 & title Cheat Scan Running - Elapsed: !hrs!h !mins!m !secs!s & timeout /t 1 >nul & goto loop"
+
 :: Console banner
+title Cheat Scan Running - Elapsed: 0h 0m 0s
 echo ==========================================
 echo         Cheat Detection Script
 echo ==========================================
 echo Developed by: ThunderDoesDev
-echo Version: 2.0
+echo Version: 3.0 - Full System Search
 echo ==========================================
 
 :: Set the location of the log file
@@ -43,25 +51,45 @@ echo [INFO] Starting cheat scan...
 echo [INFO] Searching for cheat files...
 echo [%date% %time%] Searching for cheat files... >> "%logFile%"
 
-:: Define the search paths and terms
-set searchPaths=("%USERPROFILE%\AppData\Local\Packages\StudioWildcard.4558480580BB9_1w2mm55455e38\AC\Temp\" "%USERPROFILE%\AppData\Local" "C:\Program Files" "C:\Program Files (x86)" "%USERPROFILE%" "C:\Windows\Prefetch" "%USERPROFILE%\Downloads" "C:\$Recycle.Bin")
-set searchTerms=("headshot" "primal" "unleashed" "proofcore" "ring-1" "arkinjector" "extreme-injector" "HSLoaderUpdater.exe" "UWPHelper.exe" "addicted" "HSLoader.exe" "HSUWPHelper.exe" "RDPCheck.exe" "rdp" "wallhax" "Client_32.exe")
+:: Define the search paths (entire system) and terms
+set searchPaths=("C:\" "%USERPROFILE%\AppData\Local\Packages\StudioWildcard.4558480580BB9_1w2mm55455e38\AC\Temp\" "%USERPROFILE%\AppData\Local" "C:\Program Files" "C:\Program Files (x86)" "%USERPROFILE%" "C:\Windows\Prefetch" "%USERPROFILE%\Downloads" "C:\$Recycle.Bin" "C:\Users")
+set searchTerms=("headshot" "primal" "unleashed" "proofcore" "ring-1" "arkinjector" "extreme-injector" "HSLoaderUpdater.exe" "UWPHelper.exe" "addicted" "HSLoader.exe" "HSUWPHelper.exe" "RDPCheck.exe" "rdp" "wallhax" "Client_32.exe" "cheat" "hack" "injector" "aimbot" "esp" "bypass")
 
-:: Loop through each search path and search term
-for %%d in %searchPaths% do (
-    if exist %%d (
-        echo [INFO] Searching in %%d...
-        echo [%date% %time%] Searching in %%d >> "%logFile%"
-        for %%t in %searchTerms% do (
-            dir /s /b %%d | findstr /i /c:"%%t" >> "%logFile%"
-            if !errorlevel! equ 0 (
-                echo [ALERT] Cheat detected: %%t found in %%d
-                echo Cheat detected: %%t found in %%d >> "%logFile%"
-                set cheatFound=1
-            )
-        )
-    )
+:: Full system search with hidden files and folders
+echo [INFO] Starting FULL SYSTEM search (including hidden files)...
+echo [INFO] This may take several minutes...
+echo [%date% %time%] Starting full system search... >> "%logFile%"
+echo ==========================================
+echo    REAL-TIME MATCHES FOUND:
+echo ==========================================
+
+:: PowerShell-based full system search with hidden files support
+for %%t in %searchTerms% do (
+    powershell -NoProfile -Command "
+        $searchTerm = '%%t';
+        $foundCount = 0;
+        Get-PSDrive -PSProvider FileSystem | ForEach-Object {
+            $drive = $_.Root;
+            if (Test-Path $drive) {
+                try {
+                    Get-ChildItem -Path $drive -Recurse -Force -ErrorAction SilentlyContinue | Where-Object {
+                        ($_.Name -like "*$searchTerm*") -and 
+                        ($_.Name -notlike '*cheatdetector*') -and 
+                        ($_.Name -notlike '*Cheat Detection*')
+                    } | ForEach-Object {
+                        $foundCount++;
+                        'FOUND: ' + $_.FullName + ' [' + $_.Attributes + ']';
+                    }
+                } catch {}
+            }
+        };
+        if ($foundCount -eq 0) { 'No matches for: ' + $searchTerm } else { 'Total matches for ' + $searchTerm + ': ' + $foundCount }
+    " 2>nul | tee -a "%logFile%" | findstr "FOUND:" && set cheatFound=1
 )
+
+echo.
+echo [INFO] File system search complete.
+echo [%date% %time%] File system search complete. >> "%logFile%"
 goto searchProcesses
 
 :: Function to search for suspicious processes
@@ -210,6 +238,29 @@ if !cheatFound! equ 0 (
 ) >> "%logFile%"
 
 echo [INFO] Scan complete. Check %logFile% for details.
+echo.
+
+:: Calculate and display final elapsed time
+for /f "tokens=1-3 delims=:" %%a in ("%time%") do (
+    set /a endSec=(1%%a-100)*3600 + (1%%b-100)*60 + (1%%c-100)
+)
+set /a totalSec=!endSec!-%startSec%
+set /a hrs=!totalSec!/3600
+set /a mins=(!totalSec!%%3600)/60
+set /a secs=!totalSec!%%60
+
+echo ==========================================
+echo      SCAN COMPLETED
+echo      Total Elapsed Time: !hrs!h !mins!m !secs!s
+echo ==========================================
+echo [%date% %time%] Scan completed. Elapsed time: !hrs!h !mins!m !secs!s >> "%logFile%"
+
+:: Kill the timer process
+taskkill /FI "WINDOWTITLE eq TimerProcess" /F >nul 2>&1
+title Cheat Detection - Scan Complete - !hrs!h !mins!m !secs!s
 
 endlocal
+echo.
+echo Press any key to close this window...
+pause >nul
 exit /b %ERRORLEVEL%
