@@ -14,7 +14,7 @@ echo ==========================================
 echo         Cheat Detection Script
 echo ==========================================
 echo Developed by: ThunderDoesDev
-echo Version: 1.1
+echo Version: 2.0
 echo ==========================================
 
 :: Set the location of the log file
@@ -30,7 +30,7 @@ set pcName=%COMPUTERNAME%
     echo         Cheat Detection Script
     echo ==========================================
     echo Developed by: ThunderDoesDev
-    echo Version: 1.1
+    echo Version: 2.0
     echo ==========================================
     echo Date: %date% Time: %time%
     echo PC Name: %pcName%
@@ -45,7 +45,7 @@ echo [%date% %time%] Searching for cheat files... >> "%logFile%"
 
 :: Define the search paths and terms
 set searchPaths=("%USERPROFILE%\AppData\Local\Packages\StudioWildcard.4558480580BB9_1w2mm55455e38\AC\Temp\" "%USERPROFILE%\AppData\Local" "C:\Program Files" "C:\Program Files (x86)" "%USERPROFILE%" "C:\Windows\Prefetch" "%USERPROFILE%\Downloads" "C:\$Recycle.Bin")
-set searchTerms=("headshot" "primal" "unleashed" "proofcore" "ring-1" "arkinjector" "extreme injector" "HSLoaderUpdater.exe" "UWPHelper.exe" "addicted" "HSLoader.exe" "HSUWPHelper.exe" "RDPCheck.exe" "rdp" "wallhax" "Client_32.exe")
+set searchTerms=("headshot" "primal" "unleashed" "proofcore" "ring-1" "arkinjector" "extreme-injector" "HSLoaderUpdater.exe" "UWPHelper.exe" "addicted" "HSLoader.exe" "HSUWPHelper.exe" "RDPCheck.exe" "rdp" "wallhax" "Client_32.exe")
 
 :: Loop through each search path and search term
 for %%d in %searchPaths% do (
@@ -175,8 +175,8 @@ for %%t in %searchTerms% do (
         set cheatFound=1
     )
 )
-powershell -Command "Get-ChildItem -Path '%USERPROFILE%' -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'headshot|primal|unleashed|proofcore|ring-1|arkinjector|extreme injector|HSLoaderUpdater.exe|UWPHelper.exe|addicted|HSLoader.exe|HSUWPHelper.exe|rdp|RDPCheck.exe|wallhax|Client_32.exe' } | Format-Table -Property FullName" >> "%logFile%"
-powershell -Command "Get-ChildItem -Path 'C:\Windows\Prefetch' -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'headshot|primal|unleashed|proofcore|ring-1|arkinjector|extreme injector|HSLoaderUpdater.exe|UWPHelper.exe|addicted|HSLoader.exe|HSUWPHelper.exe|rdp|RDPCheck.exe|wallhax|Client_32.exe' } | Format-Table -Property FullName" >> "%logFile%"
+powershell -Command "Get-ChildItem -Path '%USERPROFILE%' -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'headshot|primal|unleashed|proofcore|ring-1|arkinjector|extreme-injector|HSLoaderUpdater.exe|UWPHelper.exe|addicted|HSLoader.exe|HSUWPHelper.exe|rdp|RDPCheck.exe|wallhax|Client_32.exe' } | Format-Table -Property FullName" >> "%logFile%"
+powershell -Command "Get-ChildItem -Path 'C:\Windows\Prefetch' -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'headshot|primal|unleashed|proofcore|ring-1|arkinjector|extreme-injector|HSLoaderUpdater.exe|UWPHelper.exe|addicted|HSLoader.exe|HSUWPHelper.exe|rdp|RDPCheck.exe|wallhax|Client_32.exe' } | Format-Table -Property FullName" >> "%logFile%"
 
 :: Check Windows Defender Protection History
 echo [INFO] Checking Windows Defender Protection History for cheat terms...
