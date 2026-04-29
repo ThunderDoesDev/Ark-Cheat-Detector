@@ -2,10 +2,10 @@
 setlocal enabledelayedexpansion
 
 :: Check for administrative privileges
-openfiles >nul 2>&1
-if '%errorlevel%' NEQ '0' (
+net session >nul 2>&1
+if %errorlevel% neq 0 (
     echo [INFO] Requesting administrative privileges...
-    powershell -Command "Start-Process -Verb runAs -FilePath '%~0'"
+    powershell -Command "Start-Process -Verb runAs -FilePath '%~f0'"
     exit /b
 )
 
@@ -53,7 +53,7 @@ echo [%date% %time%] Searching for cheat files... >> "%logFile%"
 
 :: Define the search paths and terms
 set searchPaths=("%USERPROFILE%\AppData\Local\Packages\StudioWildcard.4558480580BB9_1w2mm55455e38\AC\Temp\" "%USERPROFILE%\AppData\Local" "C:\Program Files" "C:\Program Files (x86)" "%USERPROFILE%" "C:\Windows\Prefetch" "%USERPROFILE%\Downloads" "C:\$Recycle.Bin")
-set searchTerms=("headshot" "primal" "unleashed" "proofcore" "ring-1" "arkinjector" "extreme-injector" "HSLoaderUpdater.exe" "UWPHelper.exe" "addicted" "HSLoader.exe" "HSUWPHelper.exe" "RDPCheck.exe" "rdp" "wallhax" "Client_32.exe")
+set searchTerms=("Client_25.exe" "Client_26.exe" "Client_27.exe" "Client_28.exe" "Client_29.exe" "HsLoader.exe" "HeadShotLoader.exe" "AddictedLauncher.exe" "AddictedLauncherx64.exe" "AD.exe" "cheese.exe" "primal.exe" "PrimalClient-V2_FREE.exe" "xing.exe" "AddictedCheats" "AddictedCheatsx64" "AddictedCheatsx86" "AddictedLauncher" "AddictedLauncherx64" "AddictedLauncherx86" "AddictedLauncherx86_64" "HeadshotConfig" "proofcore" "ring-1" "arkinjector" "extreme-injector" "HSLoaderUpdater.exe" "UWPHelper.exe" "HSLoader.exe" "HSUWPHelper.exe" "RDPCheck.exe" "rdp" "wallhax" "Client_32.exe")
 
 :: Loop through each search path and search term
 for %%d in %searchPaths% do (
@@ -165,7 +165,7 @@ echo [%date% %time%] Checking for shadow copies... >> "%logFile%"
 powershell -Command "Get-WmiObject -Class Win32_ShadowCopy | Select-Object ID, DeviceObject, InstalledOn, VolumeName | Format-Table -AutoSize" >> "%logFile%" 2>&1
 
 :: If shadow copies exist, search them for cheat terms
-powershell -Command "$shadows = Get-WmiObject -Class Win32_ShadowCopy; if ($shadows) { foreach ($shadow in $shadows) { $shadowPath = $shadow.DeviceObject + '\'; if (Test-Path $shadowPath) { Write-Host \"Searching shadow copy: $($shadow.ID)\"; Get-ChildItem -Path $shadowPath -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'headshot|primal|unleashed|proofcore|ring-1|arkinjector|extreme-injector|HSLoaderUpdater|UWPHelper|addicted|HSLoader|HSUWPHelper|RDPCheck|rdp|wallhax|Client_32' } | Select-Object FullName, LastWriteTime } } }" >> "%logFile%" 2>&1
+powershell -Command "$shadows = Get-WmiObject -Class Win32_ShadowCopy; if ($shadows) { foreach ($shadow in $shadows) { $shadowPath = $shadow.DeviceObject + '\'; if (Test-Path $shadowPath) { Write-Host \"Searching shadow copy: $($shadow.ID)\"; Get-ChildItem -Path $shadowPath -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'Client_25|Client_26|Client_27|Client_28|Client_29|HsLoader|HeadShotLoader|AddictedLauncher|AddictedLauncherx64|AD|cheese|primal|PrimalClient|xing|AddictedCheats|AddictedCheatsx64|AddictedCheatsx86|HeadshotConfig|headshot|unleashed|proofcore|ring-1|arkinjector|extreme-injector|HSLoaderUpdater|UWPHelper|addicted|HSLoader|HSUWPHelper|RDPCheck|rdp|wallhax|Client_32' } | Select-Object FullName, LastWriteTime } } }" >> "%logFile%" 2>&1
 
 goto additionalPowershellChecks
 
@@ -183,8 +183,8 @@ for %%t in %searchTerms% do (
         set cheatFound=1
     )
 )
-powershell -Command "Get-ChildItem -Path '%USERPROFILE%' -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'headshot|primal|unleashed|proofcore|ring-1|arkinjector|extreme-injector|HSLoaderUpdater.exe|UWPHelper.exe|addicted|HSLoader.exe|HSUWPHelper.exe|rdp|RDPCheck.exe|wallhax|Client_32.exe' } | Format-Table -Property FullName" >> "%logFile%"
-powershell -Command "Get-ChildItem -Path 'C:\Windows\Prefetch' -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'headshot|primal|unleashed|proofcore|ring-1|arkinjector|extreme-injector|HSLoaderUpdater.exe|UWPHelper.exe|addicted|HSLoader.exe|HSUWPHelper.exe|rdp|RDPCheck.exe|wallhax|Client_32.exe' } | Format-Table -Property FullName" >> "%logFile%"
+powershell -Command "Get-ChildItem -Path '%USERPROFILE%' -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'Client_25.exe|Client_26.exe|Client_27.exe|Client_28.exe|Client_29.exe|HsLoader.exe|HeadShotLoader.exe|AddictedLauncher.exe|AddictedLauncherx64.exe|AD.exe|cheese.exe|primal.exe|PrimalClient-V2_FREE.exe|xing.exe|AddictedCheats|AddictedCheatsx64|AddictedCheatsx86|AddictedLauncher|AddictedLauncherx64|AddictedLauncherx86|AddictedLauncherx86_64|HeadshotConfig|headshot|unleashed|proofcore|ring-1|arkinjector|extreme-injector|HSLoaderUpdater.exe|UWPHelper.exe|HSLoader.exe|HSUWPHelper.exe|RDPCheck.exe|wallhax|Client_32.exe' } | Format-Table -Property FullName" >> "%logFile%"
+powershell -Command "Get-ChildItem -Path 'C:\Windows\Prefetch' -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'Client_25.exe|Client_26.exe|Client_27.exe|Client_28.exe|Client_29.exe|HsLoader.exe|HeadShotLoader.exe|AddictedLauncher.exe|AddictedLauncherx64.exe|AD.exe|cheese.exe|primal.exe|PrimalClient-V2_FREE.exe|xing.exe|AddictedCheats|AddictedCheatsx64|AddictedCheatsx86|AddictedLauncher|AddictedLauncherx64|AddictedLauncherx86|AddictedLauncherx86_64|HeadshotConfig|headshot|unleashed|proofcore|ring-1|arkinjector|extreme-injector|HSLoaderUpdater.exe|UWPHelper.exe|HSLoader.exe|HSUWPHelper.exe|RDPCheck.exe|wallhax|Client_32.exe' } | Format-Table -Property FullName" >> "%logFile%"
 
 :: Check Windows Defender Protection History
 echo [INFO] Checking Windows Defender Protection History for cheat terms...
