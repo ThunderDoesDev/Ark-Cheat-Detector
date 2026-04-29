@@ -51,89 +51,25 @@ echo [INFO] Starting cheat scan...
 echo [INFO] Searching for cheat files...
 echo [%date% %time%] Searching for cheat files... >> "%logFile%"
 
-:: Define the search paths (entire system) and terms
-set searchPaths=("C:\" "%USERPROFILE%\AppData\Local\Packages\StudioWildcard.4558480580BB9_1w2mm55455e38\AC\Temp\" "%USERPROFILE%\AppData\Local" "C:\Program Files" "C:\Program Files (x86)" "%USERPROFILE%" "C:\Windows\Prefetch" "%USERPROFILE%\Downloads" "C:\$Recycle.Bin" "C:\Users")
-set searchTerms=("headshot" "primal" "unleashed" "proofcore" "ring-1" "arkinjector" "extreme-injector" "HSLoaderUpdater.exe" "UWPHelper.exe" "addicted" "HSLoader.exe" "HSUWPHelper.exe" "RDPCheck.exe" "rdp" "wallhax" "Client_32.exe" "cheat" "hack" "injector" "aimbot" "esp" "bypass")
+:: Define the search paths and terms
+set searchPaths=("%USERPROFILE%\AppData\Local\Packages\StudioWildcard.4558480580BB9_1w2mm55455e38\AC\Temp\" "%USERPROFILE%\AppData\Local" "C:\Program Files" "C:\Program Files (x86)" "%USERPROFILE%" "C:\Windows\Prefetch" "%USERPROFILE%\Downloads" "C:\$Recycle.Bin")
+set searchTerms=("headshot" "primal" "unleashed" "proofcore" "ring-1" "arkinjector" "extreme-injector" "HSLoaderUpdater.exe" "UWPHelper.exe" "addicted" "HSLoader.exe" "HSUWPHelper.exe" "RDPCheck.exe" "rdp" "wallhax" "Client_32.exe")
 
-:: Fast multi-threaded full system search with hidden files support
-echo [INFO] Starting optimized FULL SYSTEM search (including hidden files)...
-echo [INFO] Searching all drives with parallel processing...
-echo [%date% %time%] Starting optimized full system search... >> "%logFile%"
-echo ==========================================
-echo    REAL-TIME MATCHES FOUND:
-echo ==========================================
-
-:: Use robocopy for lightning-fast file listing (much faster than dir or Get-ChildItem)
-set "tempResults=%TEMP%\cheat_scan_temp.txt"
-echo [%date% %time%] Scanning with robocopy (fast mode)... >> "%logFile%"
-
-:: High-priority user directories (fast scan)
-echo [INFO] Scanning user directories...
-for %%d in ("%USERPROFILE%\Downloads" "%USERPROFILE%\Documents" "%USERPROFILE%\Desktop" "%USERPROFILE%\AppData\Local" "%USERPROFILE%\AppData\Roaming") do (
+:: Loop through each search path and search term
+for %%d in %searchPaths% do (
     if exist %%d (
+        echo [INFO] Searching in %%d...
+        echo [%date% %time%] Searching in %%d >> "%logFile%"
         for %%t in %searchTerms% do (
-            dir /s /b /a "%%d\*%%t*" 2>nul | findstr /i /v "cheatdetector" | findstr /i /v "Cheat Detection" >> "%logFile%"
+            dir /s /b /a %%d | findstr /i /c:"%%t" >> "%logFile%"
             if !errorlevel! equ 0 (
-                echo [ALERT] Found %%t in %%d
+                echo [ALERT] Cheat detected: %%t found in %%d
+                echo Cheat detected: %%t found in %%d >> "%logFile%"
                 set cheatFound=1
             )
         )
     )
 )
-
-:: System-wide fast scan using robocopy (excludes Windows system dirs to avoid slowdown)
-echo [INFO] Scanning program directories...
-for %%t in %searchTerms% do (
-    for %%d in ("C:\Program Files" "C:\Program Files (x86)" "%USERPROFILE%") do (
-        if exist %%d (
-            robocopy %%d NUL /L /NP /XJ /R:0 /W:0 /S /NC /NS /NDL /NFL /MT:32 2^>nul | findstr /i "%%t" | findstr /i /v "cheatdetector" | findstr /i /v "Cheat Detection" >> "%logFile%" && (
-                echo [ALERT] Found %%t in %%d
-                set cheatFound=1
-            )
-        )
-    )
-)
-
-:: Check all drives root level for suspicious folders (very fast)
-echo [INFO] Checking drive roots for suspicious folders...
-for %%d in (C D E F G H) do (
-    if exist %%d:\ (
-        for %%t in %searchTerms% do (
-            dir /b /a:d "%%d:\*%%t*" 2>nul | findstr /i /v "cheatdetector" >> "%logFile%" && (
-                echo [ALERT] Suspicious folder at %%d:\ - %%t
-                set cheatFound=1
-            )
-        )
-    )
-)
-
-:: PowerShell quick scan for remaining locations (parallel threads)
-echo [INFO] Running parallel deep scan on additional locations...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "
-    $searchTerms = @('headshot', 'primal', 'unleashed', 'proofcore', 'ring-1', 'arkinjector', 'extreme-injector', 'HSLoaderUpdater', 'UWPHelper', 'addicted', 'HSLoader', 'HSUWPHelper', 'RDPCheck', 'wallhax', 'Client_32', 'cheat', 'hack', 'injector', 'aimbot', 'esp', 'bypass');
-    $exclude = @('*cheatdetector*', '*Cheat Detection*');
-    $locations = @('$Env:TEMP', 'C:\$Recycle.Bin', 'C:\Users\Public', 'C:\Windows\Temp');
-    $jobs = @();
-    foreach ($loc in $locations) {
-        if (Test-Path $loc) {
-            $jobs += Start-Job -ScriptBlock {
-                param($path, $terms, $exclude)
-                Get-ChildItem -Path $path -Recurse -Force -ErrorAction SilentlyContinue | Where-Object {
-                    $item = $_;
-                    ($terms | Where-Object { $item.Name -like "*$_*" }) -and 
-                    -not ($exclude | Where-Object { $item.Name -like $_ })
-                } | Select-Object -ExpandProperty FullName
-            } -ArgumentList $loc, $searchTerms, $exclude
-        }
-    }
-    $jobs | Wait-Job -Timeout 60 | Out-Null
-    $jobs | Receive-Job | ForEach-Object { 'FOUND: ' + $_ }
-    $jobs | Remove-Job
-" 2>nul >> "%logFile%" && set cheatFound=1
-
-echo.
-echo [INFO] File system search complete.
-echo [%date% %time%] File system search complete. >> "%logFile%"
 goto searchProcesses
 
 :: Function to search for suspicious processes
